@@ -1,0 +1,127 @@
+Note that this document follows the format outlined in this article: 
+
+Hardware Testing
+https://medium.com/globant/hardware-testing-80c1eb698ae6
+
+(Where Ms. Robles is an Engineering Manager at Lyft; see: https://www.linkedin.com/in/adriana-robles-b1a19563/)
+
+Purpose:
+
+This test case describes how to test for SSH connectivity using Password and Key based authentication. Basic assumptions of the test: a powered on computer with a network connection, OS software capable of executing SSH binaries, SSH binaries, a logged in user account with permissions compatible with the test, and an SSH server awaiting connection. The SSH server may be started locally and the testing may connect to the server via loopback.
+
+The tester attempting to login to the SSH server will be refered to as `USER`, while the ssh server attempting to be connected to is referred to as `SERVER`
+
+Test Case: Check SSH binaries are visible to the test
+Steps:
+    1. Using a terminal locate the ssh binary; For example: `which ssh`
+Response:
+    1. The ssh binary is visible to the test; For instance: `/usr/bin/ssh`
+
+Test Case: Check that network interfaces are enabled and up
+Steps:
+    1. Using a terminal check that network interfaces used in the test are up; e.g., `ip link show` or `ifconfig`
+Response:
+    1. The network interfaces should that they are enabled; e.g., `lo: <LOOPBACK,UP,LOWER_UP>` or `ens33: <BROADCAST,MULTICAST,UP,LOWER_UP>`
+
+Test Case: Check that the SSH server (SERVER) is reachable via the network
+Steps:
+    1. Using a terminal check that a network connection can be established to SERVER; e.g., `nmap <SERVER> | grep ssh`
+Response:
+    1. SERVER should be up and responding to ssh requests; e.g., `22/tcp   open  ssh`
+
+Test Case: Attempt password authentication, but SERVER does not accept password authentication
+Steps:
+    1. Configure SERVER to not accept password-based authenticaion; see: 
+        https://askubuntu.com/questions/435615/disable-password-authentication-in-ssh
+        https://stackoverflow.com/questions/20898384/disable-password-authentication-for-ssh
+    2. Attempt to connect to SERVER via ssh
+Response:
+    1. SERVER should respond with an error indicating rejection of the ssh connection.
+
+Test Case: Attempt password authentication, but with a bad username
+Steps:
+    1. Configure the SERVER to accept password-based authenticaion
+        `PasswordAuthentication yes` in `/etc/ssh/sshd_config`
+    2. Verify existing users on SERVER; e.g., `getent passwd` or `cat /etc/passwd`
+        see:
+        https://askubuntu.com/questions/410244/is-there-a-command-to-list-all-users-also-to-add-delete-modify-users-in-the
+        https://askubuntu.com/questions/410244/is-there-a-command-to-list-all-users-also-to-add-delete-modify-users-in-the/414561#414561
+        https://manpages.ubuntu.com/manpages/kinetic/en/man1/getent.1.html
+    3. Attempt to connect to SERVER via ssh with a user that does not exist on SERVER
+Response:
+    1. SERVER should respond with an error indicating rejection of the ssh connection.
+
+Test Case: Attempt password authentication, with a good username but with a bad password
+Steps:
+    1. Configure the SERVER to accept password-based authenticaion
+        `PasswordAuthentication yes` in `/etc/ssh/sshd_config`
+    2. Configure a test user to use during the test; e.g., `useradd <test_user>`
+        see:
+        https://help.ubuntu.com/stable/ubuntu-help/user-add.html.en
+        https://manpages.ubuntu.com/manpages/xenial/en/man8/useradd.8.html
+    3. Set the password on the test account; e.g., `sudo passwd <test_user>`
+        see:
+        https://askubuntu.com/questions/423942/change-password-on-root-user-and-user-account
+        https://help.ubuntu.com/stable/ubuntu-help/user-changepassword.html
+    4. Verify that the test user is allowed to connect to SERVER
+        see:
+        https://help.ubuntu.com/community/SSH/OpenSSH/Configuring
+    5. Attempt to connect to SERVER via ssh with the test username, but an incorrect password
+    6. If needed, remove the test user and configuration changes from SERVER
+Response:
+    1. SERVER should respond with an error indicating rejection of the ssh connection.
+
+Test Case: Attempt password authentication, and the connection is successful
+Steps:
+    1. Configure the SERVER to accept password-based authenticaion
+        `PasswordAuthentication yes` in `/etc/ssh/sshd_config`
+    2. Configure a test user to use during the test; e.g., `useradd <test_user>`
+        see:
+        https://help.ubuntu.com/stable/ubuntu-help/user-add.html.en
+        https://manpages.ubuntu.com/manpages/xenial/en/man8/useradd.8.html
+    3. Set the password on the test account; e.g., `sudo passwd <test_user>`
+        see:
+        https://askubuntu.com/questions/423942/change-password-on-root-user-and-user-account
+        https://help.ubuntu.com/stable/ubuntu-help/user-changepassword.html
+    4. Verify that the test user is allowed to connect to SERVER
+        see:
+        https://help.ubuntu.com/community/SSH/OpenSSH/Configuring
+    5. Attempt to connect to SERVER via ssh with the test username, and with the correct password.
+    6. If needed, remove the test user and configuration changes from SERVER
+Response:
+    1. CLIENT should show an active ssh connection with SERVER
+        see:
+        https://www.howtoforge.com/how-to-find-active-ssh-connections-on-linux/
+        https://unix.stackexchange.com/questions/92560/list-all-connected-ssh-sessions
+
+Test Case: Attempt key-based authentication, but SERVER does not accept key-based authentication
+Steps:
+    1. Configure SERVER to not accept key-based authenticaion; e.g., `PubkeyAuthentication no` in `/etc/ssh/sshd_config`
+    2. Generate a key to use with CLIENT authentication; e.g., `ssh-keygen -t rsa -b 4096`
+    3. Attempt to connect to SERVER via ssh
+Response:
+    1. SERVER should respond with an error indicating rejection of the ssh connection.
+
+Test Case: Attempt key-based authentication, but with a bad key
+Steps:
+    1. Configure SERVER to accept key-based authenticaion; e.g., `PubkeyAuthentication yes` in `/etc/ssh/sshd_config`
+    2. Generate a good key (KEY1) to use with CLIENT authentication; e.g., `ssh-keygen -t rsa -b 4096`
+    3. Transfer KEY1 to SERVER and register it for use in authentication; see:
+        https://help.ubuntu.com/community/SSH/OpenSSH/Keys
+    4. Generate a bad key (KEY2) to use with CLIENT authentication; e.g., `ssh-keygen -t rsa -b 4096`
+    5. Attempt to connect to SERVER via ssh with KEY2
+Response:
+    1. SERVER should respond with an error indicating rejection of the ssh connection.
+
+Test Case: Attempt key-based authentication, and the connection is successful
+Steps:
+    1. Configure SERVER to accept key-based authenticaion; e.g., `PubkeyAuthentication yes` in `/etc/ssh/sshd_config`
+    2. Generate a key (KEY1) to use with CLIENT authentication; e.g., `ssh-keygen -t rsa -b 4096`
+    3. Transfer KEY1 to the server and register it with SERVER; see:
+        https://help.ubuntu.com/community/SSH/OpenSSH/Keys
+    4. Attempt to connect to SERVER via ssh with KEY1
+Response:
+    1. CLIENT should show an active ssh connection with SERVER
+        see:
+        https://www.howtoforge.com/how-to-find-active-ssh-connections-on-linux/
+        https://unix.stackexchange.com/questions/92560/list-all-connected-ssh-sessions
